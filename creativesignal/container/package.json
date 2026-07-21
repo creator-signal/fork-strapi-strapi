@@ -1,0 +1,30 @@
+{
+  "name": "@creator-signal/strapi-container",
+  "version": "5.50.2-cs.1",
+  "private": true,
+  "description": "Runnable Creator Signal Strapi Community distribution",
+  "license": "SEE LICENSE IN LICENSE",
+  "scripts": {
+    "build": "strapi build",
+    "start": "strapi start"
+  },
+  "dependencies": {
+    "@sentry/node": "10.42.0",
+    "@strapi/i18n": "workspace:*",
+    "@strapi/plugin-users-permissions": "workspace:*",
+    "@strapi/provider-upload-aws-s3": "workspace:*",
+    "@strapi/strapi": "workspace:*",
+    "better-sqlite3": "12.8.0",
+    "pg": "8.20.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.3",
+    "styled-components": "6.4.1"
+  },
+  "engines": {
+    "node": ">=24.0.0 <27.0.0"
+  },
+  "strapi": {
+    "uuid": "creator-signal-community-distribution"
+  }
+}

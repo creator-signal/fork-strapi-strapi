@@ -24,6 +24,7 @@
   "workspaces": [
     "packages/*",
     "packages/*/*",
+    "creativesignal/*",
     "examples/*",
     "examples/plugins/*",
     "examples/*/src/plugins/*",

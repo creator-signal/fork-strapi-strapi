@@ -1,0 +1,10 @@
+.git
+.nx
+**/node_modules
+**/coverage
+**/.cache
+**/.tmp
+**/build
+**/dist
+**/*.log
+
