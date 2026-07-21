@@ -20,7 +20,9 @@ const enabledConfig = {
 const createStrapi = ({ enabled = true, withPlugin = true } = {}) => {
   const set = jest.fn();
   const register = jest.fn();
+  const updateAdvancedSettings = jest.fn();
   const authController = { register };
+  const settingsController = { updateAdvancedSettings };
   const store = { get: jest.fn().mockResolvedValue({ allow_register: true }), set };
   const strapi = {
     config: {
@@ -28,10 +30,25 @@ const createStrapi = ({ enabled = true, withPlugin = true } = {}) => {
         key === 'admin.creativesignal' && enabled ? enabledConfig : fallback
       ),
     },
-    plugin: jest.fn(() => (withPlugin ? { controller: jest.fn(() => authController) } : undefined)),
+    plugin: jest.fn(() =>
+      withPlugin
+        ? {
+            controller: jest.fn((name: string) =>
+              name === 'auth' ? authController : settingsController
+            ),
+          }
+        : undefined
+    ),
     store: jest.fn(() => store),
   } as unknown as Core.Strapi;
-  return { authController, register, set, strapi };
+  return {
+    authController,
+    register,
+    set,
+    settingsController,
+    strapi,
+    updateAdvancedSettings,
+  };
 };
 
 describe('Creator Signal registration controls', () => {
@@ -48,7 +65,8 @@ describe('Creator Signal registration controls', () => {
   });
 
   test('forces users-permissions public registration off', async () => {
-    const { authController, register, strapi, set } = createStrapi();
+    const { authController, register, strapi, set, settingsController, updateAdvancedSettings } =
+      createStrapi();
     await disableCreatorSignalPublicRegistration(strapi);
     expect(set).toHaveBeenCalledWith({
       key: 'advanced',
@@ -59,5 +77,15 @@ describe('Creator Signal registration controls', () => {
     authController.register(ctx as never, jest.fn() as never);
     expect(ctx.notFound).toHaveBeenCalled();
     expect(register).not.toHaveBeenCalled();
+
+    const settingsContext = {
+      request: { body: { allow_register: true, unique_email: true } },
+    };
+    settingsController.updateAdvancedSettings(settingsContext as never, jest.fn() as never);
+    expect(settingsContext.request.body).toEqual({
+      allow_register: false,
+      unique_email: true,
+    });
+    expect(updateAdvancedSettings).toHaveBeenCalled();
   });
 });
