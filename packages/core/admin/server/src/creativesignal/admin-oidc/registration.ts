@@ -1,5 +1,6 @@
 import type { Core } from '@strapi/types';
 import { errors } from '@strapi/utils';
+import type { Context } from 'koa';
 
 import { getCreatorSignalAdminOidcConfig } from './config';
 
@@ -28,7 +29,7 @@ export const disableCreatorSignalPublicRegistration = async (
 
   // Both the REST and GraphQL registration paths resolve this controller.
   // Keep the route unavailable even if the persisted setting is later changed.
-  usersPermissions.controller('auth').register = (ctx) => ctx.notFound();
+  usersPermissions.controller('auth').register = (ctx: Context) => ctx.notFound();
 
   const store = strapi.store({ type: 'plugin', name: 'users-permissions' });
   const advanced = ((await store.get({ key: 'advanced' })) ?? {}) as Record<string, unknown>;
