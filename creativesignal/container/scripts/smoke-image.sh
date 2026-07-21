@@ -4,6 +4,7 @@ set -eu
 image="${1:?image tag is required}"
 name="creator-signal-strapi-smoke-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
 port="${STRAPI_SMOKE_PORT:-49120}"
+registration_body="$(mktemp)"
 
 cleanup() {
   status=$?
@@ -12,6 +13,7 @@ cleanup() {
     docker logs "$name" || true
   fi
   docker rm -f "$name" >/dev/null 2>&1 || true
+  rm -f "$registration_body"
   exit "$status"
 }
 trap cleanup EXIT INT TERM
@@ -57,11 +59,15 @@ OIDC_STATUS="$status" node -e '
   }
 '
 
-registration_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+registration_status="$(curl --silent --output "$registration_body" --write-out '%{http_code}' \
   --request POST --header 'content-type: application/json' \
   --data '{"username":"smoke-signup","email":"signup@example.test","password":"Smoke-password-123!"}' \
   "http://127.0.0.1:${port}/api/auth/local/register")"
-test "$registration_status" = "404"
+if [ "$registration_status" = "400" ]; then
+  grep 'Register action is currently disabled' "$registration_body" >/dev/null
+else
+  test "$registration_status" = "404"
+fi
 
 docker exec "$name" node -e "
   const admin = require('/opt/strapi/packages/core/admin/package.json');
