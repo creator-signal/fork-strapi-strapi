@@ -58,7 +58,8 @@ OIDC_STATUS="$status" node -e '
 '
 
 registration_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
-  --request POST --header 'content-type: application/json' --data '{}' \
+  --request POST --header 'content-type: application/json' \
+  --data '{"username":"smoke-signup","email":"signup@example.test","password":"Smoke-password-123!"}' \
   "http://127.0.0.1:${port}/api/auth/local/register")"
 test "$registration_status" = "404"
 
