@@ -31,6 +31,7 @@ import type {
   ResetPassword,
 } from '../../../shared/contracts/authentication';
 import { AdminUser } from '../../../shared/contracts/shared';
+import { assertCreatorSignalAdminRegistrationAllowed } from '../creativesignal';
 
 const buildSessionMetadataFromContext = (ctx: Context) =>
   buildSessionMetadata({
@@ -136,6 +137,7 @@ export default {
   },
 
   async register(ctx: Context) {
+    assertCreatorSignalAdminRegistrationAllowed(strapi);
     const input = ctx.request.body as Register.Request['body'];
 
     await validateRegistrationInput(input);
@@ -185,6 +187,7 @@ export default {
   },
 
   async registerAdmin(ctx: Context) {
+    assertCreatorSignalAdminRegistrationAllowed(strapi);
     const input = ctx.request.body as RegisterAdmin.Request['body'];
 
     await validateAdminRegistrationInput(input);

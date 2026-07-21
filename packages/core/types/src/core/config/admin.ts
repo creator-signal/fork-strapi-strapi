@@ -1,3 +1,5 @@
+import type { CreatorSignal } from './creativesignal';
+
 export interface ApiToken {
   salt: string;
 }
@@ -136,6 +138,7 @@ export interface Admin {
   // required
   apiToken: ApiToken;
   auth: Auth;
+  creativesignal?: CreatorSignal;
 
   // optional - admin panel URL and legacy dev-server settings
   /**

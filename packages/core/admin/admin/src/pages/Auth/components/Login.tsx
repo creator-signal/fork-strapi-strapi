@@ -18,6 +18,7 @@ import {
 import { translatedErrors } from '../../../utils/translatedErrors';
 
 import type { Login } from '../../../../../shared/contracts/authentication';
+import { CreatorSignalAdminOidcLogin } from '../../../creativesignal';
 
 interface LoginProps {
   children?: React.ReactNode;
@@ -100,6 +101,7 @@ const Login = ({ children }: LoginProps) => {
               </Typography>
             ) : null}
           </Column>
+          <CreatorSignalAdminOidcLogin />
           <Form
             method="PUT"
             initialValues={{

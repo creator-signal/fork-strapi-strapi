@@ -10,6 +10,7 @@ import contentApi from './content-api';
 import transfer from './transfer';
 import homepage from './homepage';
 import aiRoutes from '../ai/routes/ai';
+import { routes as creativesignalAdminOidcRoutes } from '../creativesignal';
 
 const routes = {
   admin: {
@@ -27,6 +28,7 @@ const routes = {
       ...transfer,
       ...homepage,
       ...aiRoutes.routes,
+      ...creativesignalAdminOidcRoutes,
     ],
   },
 };

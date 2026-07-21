@@ -10,6 +10,7 @@ import {
 import adminActions from './config/admin-actions';
 import adminConditions from './config/admin-conditions';
 import constants from './services/constants';
+import { disableCreatorSignalPublicRegistration } from './creativesignal';
 import {
   DEFAULT_MAX_REFRESH_TOKEN_LIFESPAN,
   DEFAULT_IDLE_REFRESH_TOKEN_LIFESPAN,
@@ -215,4 +216,5 @@ export default async ({ strapi }: { strapi: Core.Strapi }) => {
   tokenService.checkSecretIsDefined();
 
   await createDefaultAPITokensIfNeeded();
+  await disableCreatorSignalPublicRegistration(strapi);
 };

@@ -12,6 +12,7 @@ import {
   validateUpdateProjectSettingsImagesDimensions,
 } from '../validation/project-settings';
 import { getService } from '../utils';
+import { creatorSignalAdminExistsForRouting } from '../creativesignal';
 
 import type {
   Init,
@@ -53,7 +54,7 @@ export default {
 
   async init() {
     let uuid = strapi.config.get('uuid', false);
-    const hasAdmin = await getService('user').exists();
+    const hasAdmin = creatorSignalAdminExistsForRouting(strapi, await getService('user').exists());
     const { menuLogo, authLogo } = await getService('project-settings').getProjectSettings();
     // set to null if telemetryDisabled flag not avaialble in package.json
     const telemetryDisabled: boolean | null = strapi.config.get(
