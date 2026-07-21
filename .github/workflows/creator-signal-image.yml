@@ -1,0 +1,119 @@
+name: Creator Signal Strapi image
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - '.github/workflows/creator-signal-image.yml'
+      - 'creativesignal/**'
+      - 'packages/core/admin/**'
+      - 'packages/core/strapi/**'
+      - 'packages/core/types/**'
+      - 'packages/plugins/i18n/**'
+      - 'packages/plugins/users-permissions/**'
+      - 'packages/providers/upload-aws-s3/**'
+      - 'package.json'
+      - 'yarn.lock'
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/creator-signal-image.yml'
+      - 'creativesignal/**'
+      - 'packages/core/admin/**'
+      - 'packages/core/strapi/**'
+      - 'packages/core/types/**'
+      - 'packages/plugins/i18n/**'
+      - 'packages/plugins/users-permissions/**'
+      - 'packages/providers/upload-aws-s3/**'
+      - 'package.json'
+      - 'yarn.lock'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: creator-signal-strapi-image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Resolve image version
+        id: version
+        shell: bash
+        run: |
+          version="$(node -e "const v=require('./creativesignal/container/version.json'); process.stdout.write(v.upstreamVersion + '-cs.' + v.distributionRevision)")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Build local acceptance image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: creativesignal/container/Dockerfile
+          load: true
+          platforms: linux/amd64
+          push: false
+          tags: creator-signal/strapi:${{ steps.version.outputs.version }}-test
+          cache-from: type=gha,scope=creator-signal-strapi-amd64
+          cache-to: type=gha,mode=max,scope=creator-signal-strapi-amd64
+      - name: Smoke-test OIDC and registration boundaries
+        run: >-
+          sh creativesignal/container/scripts/smoke-image.sh
+          creator-signal/strapi:${{ steps.version.outputs.version }}-test
+
+  publish:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Resolve image metadata
+        id: meta
+        shell: bash
+        run: |
+          image="$(node -p "require('./creativesignal/container/version.json').image")"
+          version="$(node -e "const v=require('./creativesignal/container/version.json'); process.stdout.write(v.upstreamVersion + '-cs.' + v.distributionRevision)")"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish manifest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: creativesignal/container/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:develop
+          labels: |
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+          cache-from: type=gha,scope=creator-signal-strapi-multiarch
+          cache-to: type=gha,mode=max,scope=creator-signal-strapi-multiarch
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ steps.meta.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - name: Publish immutable digest evidence
+        run: |
+          echo '${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}@${{ steps.build.outputs.digest }}' >> "$GITHUB_STEP_SUMMARY"
