@@ -21,11 +21,8 @@ const packages = await Promise.all(
   packagePaths.map(async (path) => JSON.parse(await readFile(join(root, path), 'utf8')))
 );
 const expectedDistributionVersion = `${version.upstreamVersion}-cs.${version.distributionRevision}`;
-if (packages.slice(0, 3).some((pkg) => pkg.version !== version.upstreamVersion)) {
+if (packages.some((pkg) => pkg.version !== version.upstreamVersion)) {
   throw new Error('Creator Signal image version does not match the fork package versions');
-}
-if (packages[3].version !== expectedDistributionVersion) {
-  throw new Error('Creator Signal container package version is inconsistent');
 }
 
 const customSource = join(root, 'packages/core/admin/server/src/creativesignal');
