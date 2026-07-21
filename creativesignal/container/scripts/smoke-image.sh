@@ -49,8 +49,13 @@ while [ "$stable" -lt 3 ]; do
 done
 
 status="$(curl --fail --silent --show-error "http://127.0.0.1:${port}/admin/creativesignal/oidc/status")"
-printf '%s' "$status" | grep '"enabled":true' >/dev/null
-printf '%s' "$status" | grep '"/admin/creativesignal/oidc/start"' >/dev/null
+OIDC_STATUS="$status" node -e '
+  const payload = JSON.parse(process.env.OIDC_STATUS);
+  const status = payload?.data?.data ?? payload?.data ?? payload;
+  if (status.enabled !== true || status.startPath !== "/admin/creativesignal/oidc/start") {
+    throw new Error(`Unexpected Creator Signal OIDC status: ${JSON.stringify(payload)}`);
+  }
+'
 
 registration_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --request POST --header 'content-type: application/json' --data '{}' \

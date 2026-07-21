@@ -7,4 +7,4 @@
 **/build
 **/dist
 **/*.log
-
+creativesignal/container/scripts/smoke-image.sh
