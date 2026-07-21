@@ -64,9 +64,61 @@ jobs:
           sh creativesignal/container/scripts/smoke-image.sh
           creator-signal/strapi:${{ steps.version.outputs.version }}-test
 
-  publish:
+  publish-platform:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Resolve image metadata
+        id: meta
+        shell: bash
+        run: |
+          image="$(node -p "require('./creativesignal/container/version.json').image")"
+          version="$(node -e "const v=require('./creativesignal/container/version.json'); process.stdout.write(v.upstreamVersion + '-cs.' + v.distributionRevision)")"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "platform_tag=$version-${{ matrix.architecture }}-$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish ${{ matrix.platform }} image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: creativesignal/container/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.platform_tag }}
+          labels: |
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+          cache-from: type=gha,scope=creator-signal-strapi-${{ matrix.architecture }}
+          cache-to: type=gha,mode=max,scope=creator-signal-strapi-${{ matrix.architecture }}
+
+  publish:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [validate, publish-platform]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -75,7 +127,6 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@v5
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - name: Resolve image metadata
         id: meta
@@ -90,30 +141,36 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and publish manifest
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: creativesignal/container/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: mode=max
-          sbom: true
-          tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.image }}:develop
-          labels: |
-            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
-          cache-from: type=gha,scope=creator-signal-strapi-multiarch
-          cache-to: type=gha,mode=max,scope=creator-signal-strapi-multiarch
+      - name: Publish multi-architecture manifest
+        id: manifest
+        shell: bash
+        run: |
+          image='${{ steps.meta.outputs.image }}'
+          version='${{ steps.meta.outputs.version }}'
+          docker buildx imagetools create \
+            --tag "$image:$version" \
+            --tag "$image:develop" \
+            --metadata-file manifest-metadata.json \
+            "$image:$version-amd64-$GITHUB_SHA" \
+            "$image:$version-arm64-$GITHUB_SHA"
+          digest="$(jq -er '."containerimage.descriptor".digest' manifest-metadata.json)"
+          test "${digest#sha256:}" != "$digest"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+      - name: Verify published platforms
+        shell: bash
+        run: |
+          docker buildx imagetools inspect \
+            '${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}' \
+            --format '{{json .Manifest}}' > manifest.json
+          jq -e '
+            [.manifests[] | select(.platform.os == "linux") | .platform.architecture]
+            | unique == ["amd64", "arm64"]
+          ' manifest.json
       - uses: actions/attest-build-provenance@v3
         with:
           subject-name: ${{ steps.meta.outputs.image }}
-          subject-digest: ${{ steps.build.outputs.digest }}
+          subject-digest: ${{ steps.manifest.outputs.digest }}
           push-to-registry: true
       - name: Publish immutable digest evidence
         run: |
-          echo '${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}@${{ steps.build.outputs.digest }}' >> "$GITHUB_STEP_SUMMARY"
+          echo '${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}@${{ steps.manifest.outputs.digest }}' >> "$GITHUB_STEP_SUMMARY"
