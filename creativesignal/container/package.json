@@ -9,7 +9,7 @@
     "start": "strapi start"
   },
   "dependencies": {
-    "@sentry/node": "10.42.0",
+    "@creator-signal/sentry-node": "npm:@sentry/node@10.42.0",
     "@strapi/i18n": "workspace:*",
     "@strapi/plugin-users-permissions": "workspace:*",
     "@strapi/provider-upload-aws-s3": "workspace:*",
