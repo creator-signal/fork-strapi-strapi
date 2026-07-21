@@ -14,6 +14,7 @@ import webhooks from './webhooks';
 import contentApi from './content-api';
 import homepage from './homepage';
 import ai from '../ai/controllers/ai';
+import { controller as creativesignalAdminOidc } from '../creativesignal';
 
 export default {
   admin,
@@ -30,4 +31,5 @@ export default {
   'content-api': contentApi,
   homepage,
   ai,
+  creativesignalAdminOidc,
 };
