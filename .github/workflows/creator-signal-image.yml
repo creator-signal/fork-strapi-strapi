@@ -15,6 +15,7 @@ on:
       - 'package.json'
       - 'yarn.lock'
   push:
+    # Keep the develop tag aligned with every merged branch head.
     branches: [develop]
   workflow_dispatch:
 
