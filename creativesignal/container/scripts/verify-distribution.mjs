@@ -25,6 +25,22 @@ if (packages.some((pkg) => pkg.version !== version.upstreamVersion)) {
   throw new Error('Creator Signal image version does not match the fork package versions');
 }
 
+const singletonModulesSource = await readFile(
+  join(root, 'packages/core/strapi/src/node/core/admin-vite-singleton-modules.ts'),
+  'utf8'
+);
+for (const moduleName of [
+  '@codemirror/state',
+  '@codemirror/view',
+  '@codemirror/language',
+  '@codemirror/lang-json',
+  '@uiw/react-codemirror',
+]) {
+  if (!singletonModulesSource.includes(`'${moduleName}'`)) {
+    throw new Error(`Admin JSON editor singleton contract is missing ${moduleName}`);
+  }
+}
+
 const customSource = join(root, 'packages/core/admin/server/src/creativesignal');
 const callbackSource = await readFile(join(customSource, 'admin-oidc/config.ts'), 'utf8');
 if (!callbackSource.includes('/admin/creativesignal/oidc/callback')) {

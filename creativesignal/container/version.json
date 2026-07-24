@@ -1,6 +1,6 @@
 {
   "schema": "creator-signal.strapi-image/v1",
-  "upstreamVersion": "5.50.2",
+  "upstreamVersion": "5.51.0",
   "distributionRevision": 1,
   "image": "ghcr.io/creator-signal/strapi"
 }

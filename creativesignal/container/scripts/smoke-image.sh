@@ -72,5 +72,5 @@ fi
 docker exec "$name" node -e "
   const admin = require('/opt/strapi/packages/core/admin/package.json');
   const strapi = require('/opt/strapi/packages/core/strapi/package.json');
-  if (admin.version !== '5.50.2' || strapi.version !== '5.50.2') process.exit(1);
+  if (admin.version !== '5.51.0' || strapi.version !== '5.51.0') process.exit(1);
 "
