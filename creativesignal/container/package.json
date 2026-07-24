@@ -1,6 +1,6 @@
 {
   "name": "@creator-signal/strapi-container",
-  "version": "5.50.2",
+  "version": "5.51.0",
   "private": true,
   "description": "Runnable Creator Signal Strapi Community distribution",
   "license": "SEE LICENSE IN LICENSE",

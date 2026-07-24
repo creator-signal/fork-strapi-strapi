@@ -7,7 +7,7 @@ code into upstream packages.
 The published image is:
 
 ```text
-ghcr.io/creator-signal/strapi:5.50.2-cs.1
+ghcr.io/creator-signal/strapi:5.51.0-cs.1
 ```
 
 The image contains the normal upstream Community runtime plus the standalone Creator Signal
@@ -39,3 +39,6 @@ an upstream refresh). Pull requests build and smoke-test an AMD64 image. A merge
 publishes AMD64 and ARM64 manifests to GHCR.
 
 Consumers must pin the resulting manifest digest, not only the mutable human-readable tag.
+
+The 5.51.0 distribution includes Strapi's Admin singleton-module repair for CodeMirror. This is
+required by governed content types with JSON fields, including Creator Signal public-site Pages.
