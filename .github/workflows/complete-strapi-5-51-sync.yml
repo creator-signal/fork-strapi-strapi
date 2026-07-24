@@ -38,3 +38,5 @@ jobs:
           git rm .github/workflows/complete-strapi-5-51-sync.yml
           git commit -m "chore: complete Creator Signal Strapi 5.51 sync"
           git push origin HEAD:issue/505-strapi-5-51-page-editor
+
+# One-shot workflow; it removes itself after regenerating the merged lockfile.
